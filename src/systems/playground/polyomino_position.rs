@@ -5,13 +5,23 @@ use crate::utils::{
 
 use crate::param_const::cst;
 
-use super::grid::Grille;
+use super::grid::Grid;
 pub type Coord = (i16, i16);
 
 #[derive(Clone)]
 pub struct PolyominoPosition {
     pub org: Coord,
     pub polyomino: Tetromino,
+}
+
+impl PolyominoPosition {
+    pub fn get_preview_polyomino_position(&self, g: &Grid) -> PolyominoPosition {
+        let mut moke = self.clone();
+        while let Some(t) = moke.est_bougeable(Direction::D, g) {
+            moke = t;
+        }
+        moke
+    }
 }
 
 
@@ -24,7 +34,7 @@ fn co_est_invalide(c:(i16,i16)) -> bool {
 }
 
 impl PolyominoPosition {
-    pub fn est_bougeable(&self, dir: Direction, g: &Grille) -> Option<PolyominoPosition> {
+    pub fn est_bougeable(&self, dir: Direction, g: &Grid) -> Option<PolyominoPosition> {
         let mut moke = self.clone();
         use Direction::*;
 
@@ -54,9 +64,9 @@ impl PolyominoPosition {
 
 
 
-    pub fn est_tournable(&mut self, dir: Direction, g: &Grille) -> Option<PolyominoPosition> {
+    pub fn est_tournable(&mut self, dir: Direction, g: &Grid) -> Option<PolyominoPosition> {
         let mut moke = self.clone();
-        if let Err(_) = moke.polyomino.rotate(dir) {
+        if let Err(_) = moke.polyomino.basic_rotation(dir) {
             return None;
         }
         for co in moke.to_coord() {
@@ -82,6 +92,8 @@ impl PolyominoPosition {
         Self::from(Tetromino::rand())
     }
 
+    
+
     pub fn to_coord(&self) -> Vec<Coord> {
         let it: Vec<Coord> = self.polyomino.to_coord();
         let modified_coords: Vec<Coord> = it
@@ -100,7 +112,7 @@ impl PolyominoPosition {
         self.polyomino.forme()
     }
 
-    pub fn code_ansi(&self) -> &str {
-        self.polyomino.code_ansi()
+    pub fn code_ansi(&self) -> crossterm::style::Color {
+        self.polyomino.color()
     }
 }

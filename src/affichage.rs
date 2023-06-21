@@ -1,30 +1,20 @@
-use crossterm::QueueableCommand;
 use std::io;
 //use std::io::{stdout, Write};
-#[allow(unused_imports)]
+
 use crossterm::{
     cursor, execute, queue,
-    style::{Color, Print, ResetColor, SetAttribute, SetBackgroundColor},
+    style::ResetColor,
     terminal,
     terminal::{ClearType, EnterAlternateScreen, LeaveAlternateScreen},
     Result,
 };
 
-use std::thread;
-use std::time::Duration;
 use std::io::Write;
-use crate::{game::Game, utils::{tetromino::{Forme, Tetromino}, direction::Direction, container::{Container, Div}}, systems::{polyomino_position::PolyominoPosition, grid::Grille}};
-use crate::param_const::cst;
-use crate::param_const::param;
+use crate::game::Game;
 
-fn to_ansi_color(col: &str) -> Color {
-    Color::parse_ansi(&*format!("5;{}", col)).unwrap()
-}
 
-// impl Game {
-//     pub fn ajoute_container(&mut self, c: Container) {
-//         self.containers.push(c);
-//     }
+// pub fn to_ansi_color(col: &str) -> Color {
+//     Color::parse_ansi(&*format!("5;{}", col)).unwrap()
 // }
 
 impl Game {
@@ -37,18 +27,15 @@ impl Game {
             ResetColor,
             terminal::Clear(ClearType::All),
             cursor::Hide,
-            cursor::MoveTo(1, 1)
         )?;
         for e in self.get_containers().iter() {
             let _ = e.init();
         }
         let _ = self.stdout.flush();
-        thread::sleep(Duration::from_secs(4));
         Ok(())
     }
 
     pub fn quit_playground(&self) -> io::Result<()>{
-        //thread::sleep(Duration::from_secs(7));
         let mut w = &self.stdout;
         queue!(w, ResetColor, terminal::Clear(ClearType::All), cursor::Show)?;
         terminal::disable_raw_mode()?;
@@ -58,128 +45,13 @@ impl Game {
 }
 
 
-pub struct Grid {
-    pub current_polyomino: PolyominoPosition,
-    pub grid: Grille,
-    pub contain: Container,
-}
-impl Div for Grid {
-    fn get_container(&self) -> &Container {
-        &self.contain
-    }
-    fn draw_inside(&self) -> io::Result<()> {
-        let mut w = io::stdout();
-        let g = &self.grid; // (20, 10) 'fin plutot (0-19,0-20)
-        for y in 0..cst::NB_LIGNE_GRILLE as i16 { // 0 -> 19
-            for x in 0..cst::NB_COLONNE_GRILLE as i16 { // 0 -> 9
-                let cx = x as u16 + self.contain.co_x.0 + 1;
-                let cy = y as u16 + self.contain.co_y.0 + 1;
-                let case_color = to_ansi_color(g.get_case((y,x)).code_ansi());
-                queue!(
-                    w,
-                    cursor::MoveTo(cx*2, cy),
-                    SetBackgroundColor(case_color),
-                    Print("  "),
-                    SetBackgroundColor(Color::Reset)
-                )?;
-            }
-        }
-          
-
-        let mut moke = self.current_polyomino.clone();
-        let mut i = 0;
-        while let Some(t) = moke.est_bougeable(Direction::D, &self.grid) {
-            moke = t;
-            i+=1;
-        }
-
-        for t in self.current_polyomino.to_coord() {
-            let x = (t.1 as u16 + 1 + self.contain.co_x.0 )*2;
-            let y = t.0 as u16 + 1 + self.contain.co_y.0;
-            queue!(
-                w,
-                //preview
-                cursor::MoveTo(x, y+i),
-                SetBackgroundColor(to_ansi_color(param::COULEUR_PREVIEW)),
-                Print("  "),
-                //SetBackgroundColor(Color::Reset),
-                //polyo
-                cursor::MoveTo(x, y),
-                SetBackgroundColor(to_ansi_color(self.current_polyomino.code_ansi())),
-                Print("  "),
-                SetBackgroundColor(Color::Reset)
-            )?;
-        }
-
-        
-    
-        
-        Ok(())
-    }
-}
-
-pub struct Nexts {
-    pub nexts: Box<Vec<Tetromino>>,
-    pub contain: Container,
-}
-impl Div for Nexts {
-    fn get_container(&self) -> &Container {
-        &self.contain
-    }
-    fn draw_inside(&self) -> io::Result<()> {
-        let mut w = io::stdout();
-        for i in 0..cst::NB_PREVIEW as u16 {
-            let tetro = self.nexts[i as usize];
-            for t in tetro.to_coord() {
-                let mut x = (t.1 as u16 + 1 + param::CONTAINER_NEXT.co_x.0 + 1)*2 ;
-                let y = t.0 as u16 + 1 + param::CONTAINER_NEXT.co_y.0 + 1;
-                if tetro.forme() == Forme::I || tetro.forme() == Forme::O {x -= 1} 
-                queue!(
-                    w,
-                    cursor::MoveTo(x, i*4 + y),
-                    SetBackgroundColor(to_ansi_color(tetro.code_ansi())),
-                    Print("  "),
-                    SetBackgroundColor(Color::Reset)
-                )?;
-            }
-        }
-        Ok(())
-    }
-}
 
 
 
-pub struct Holder {
-    pub holded: Option<Tetromino>,
-    pub contain: Container,
-}
 
-impl Div for Holder {
-    fn draw_inside(&self) -> io::Result<()> {
-        let mut w = io::stdout();
-        match &self.holded {
-            None => Ok(()),
-            Some(tetro) => {
-                for t in tetro.to_coord() {
-                    let mut x = (t.1 as u16 + 1 + param::CONTAINER_HOLD.co_x.0 + 1)*2;
-                    if tetro.forme() == Forme::I || tetro.forme() == Forme::O { x -= 1} 
-                    let y = t.0 as u16 + 1 + param::CONTAINER_HOLD.co_x.0 + 1;
-                    queue!(
-                        w,
-                        cursor::MoveTo(x, y),
-                        SetBackgroundColor(to_ansi_color(tetro.code_ansi())),
-                        Print("  "),
-                        SetBackgroundColor(Color::Reset)
-                    )?;
-                }
-                Ok(())
-            }
-        }
-    }
-    fn get_container(&self) -> &Container {
-        &self.contain
-    }
-}
+
+
+
 
 
 

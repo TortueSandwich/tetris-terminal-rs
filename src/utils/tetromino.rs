@@ -32,6 +32,19 @@ impl Forme {
             ),
         }
     }
+
+    pub fn color(&self) -> crossterm::style::Color {
+        use crate::param_const::param::*;
+        match self {
+            Forme::L => COULEUR_L,
+            Forme::J => COULEUR_J,
+            Forme::S => COULEUR_S,
+            Forme::Z => COULEUR_Z,
+            Forme::I => COULEUR_I,
+            Forme::T => COULEUR_T,
+            Forme::O => COULEUR_O,
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -55,17 +68,8 @@ impl Tetromino {
         Tetromino::from(f)
     }
 
-    pub fn code_ansi(&self) -> &str {
-        use crate::param_const::param::*;
-        match self.f {
-            Forme::L => COULEUR_L,
-            Forme::J => COULEUR_J,
-            Forme::S => COULEUR_S,
-            Forme::Z => COULEUR_Z,
-            Forme::I => COULEUR_I,
-            Forme::T => COULEUR_T,
-            Forme::O => COULEUR_O,
-        }
+    pub fn color(&self) -> crossterm::style::Color {
+        self.f.color()
     }
 
     pub fn set_to_init_rotation(&mut self) -> Tetromino {
@@ -121,7 +125,7 @@ impl RotationElement {
 }
 
 impl Tetromino {
-    pub fn rotate(&mut self, dir: Direction) -> Result<(), String> {
+    pub fn basic_rotation(&mut self, dir: Direction) -> Result<(), String> {
         use Direction::*;
         match dir {
             L => {
@@ -140,6 +144,14 @@ impl Tetromino {
             )),
         }
     }
+
+    // pub fn to_coord(&self) -> Vec<(i16, i16)> {
+    //     self.coordonne
+    //         .to_vec()
+    //         .iter()
+    //         .map(|c| (c.0 as i16, c.1 as i16))
+    //         .collect()
+    // }
 
     pub fn to_coord(&self) -> Vec<(i16, i16)> {
         self.coordonne

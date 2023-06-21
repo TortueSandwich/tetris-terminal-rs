@@ -4,7 +4,10 @@ use crossterm::{
     style::{Color, Print, SetBackgroundColor},
 };
 
+use crate::param_const::param;
+
 #[allow(unused)]
+#[derive(Debug)]
 pub struct Container {
     pub co_x :(u16, u16),
     pub co_y :(u16, u16),
@@ -15,11 +18,15 @@ pub struct Container {
 impl Container {
     #[allow(unused)]
     pub const fn new(x:(u16, u16), y:(u16, u16), couleur_bordure: Color) -> Container {
-        Container { co_x: x, co_y: y, couleur_bordure, couleur_fond: Color::AnsiValue(0) }
+        Container { co_x: x, co_y: y, couleur_bordure, couleur_fond: param::COULEUR_ }
     }
     #[allow(unused)]
     pub const fn default(x:(u16, u16), y:(u16, u16)) -> Container {
-        Container { co_x: x, co_y: y, couleur_bordure:Color::AnsiValue(15), couleur_fond: Color::AnsiValue(0) }
+        Container { co_x: x, co_y: y, couleur_bordure: param::COULEUR_BORD, couleur_fond: param::COULEUR_ }
+    }
+
+    pub const fn one_tetro_holder(x :u16,y :u16) -> Container {
+        Container::default((x, x+6), (y, y+6))
     }
 }
 
@@ -59,7 +66,7 @@ impl Container {
     } 
 }
 
-pub trait Div {
+pub trait ContainTrait {
     fn draw_inside(&self) -> io::Result<()>;
     fn get_container(&self) -> &Container;
 

@@ -1,8 +1,4 @@
-use crate::affichage::{Grid, Holder, Nexts};
-use crate::param_const::param;
-use crate::utils::container::{Container, Div};
-use crate::{param_const::cst, systems::colision};
-use crate::systems::grid::Grille;
+
 use std::io;
 use std::io::Write;
 
@@ -14,7 +10,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, size, Clear, ClearType, SetSize},
     ExecutableCommand,
 };
-use rand::random;
+//use rand::random;
 
 #[allow(unused_imports)]
 use std::io::Stdout;
@@ -24,39 +20,34 @@ const MAX_INTERVAL: u16 = 700;
 const MIN_INTERVAL: u16 = 200;
 const MAX_SPEED: u16 = 20;
 
-use crate::utils::direction::Direction;
+use crate::{utils::{direction::Direction, container::ContainTrait, tetromino::{Tetromino, Forme}}, systems::{playground::{data::Playground, grid::Grid, polyomino_position::PolyominoPosition}, next::data::Nexts, hold::data::Hold, mechanics::{colision::est_valide, randomness::PolyominoBag}}, param_const::{param, cst}};
 pub enum Commandes {
     Quit,
     Tourne(Direction),
     Bouge(Direction),
     Hold,
+    Quick,
 }
 
-use crate::systems::polyomino_position::PolyominoPosition;
-use crate::utils::tetromino::{Tetromino, Forme};
 
 // #[derive(Debug)]
 // original_terminal_size: (u16, u16),
 pub struct Game {
     pub stdout: Stdout,
-    pub g: Grid,
-    pub nexts: Nexts,
-    pub holded: Holder,
+    pub grid_container: Playground,
+    pub nexts_container: Nexts,
+    pub hold_container: Hold,
     speed: u16,
     score: u16,
 }
 
 // RUNNING CODE
 impl Game {
-    pub fn get_containers(&self) -> Vec<&dyn Div>{
-        vec![&self.g, &self.nexts, &self.holded]
+    pub fn get_containers(&self) -> Vec<&dyn ContainTrait>{
+        vec![&self.grid_container, &self.nexts_container, &self.hold_container]
     }
 
     pub fn run(&mut self) -> io::Result<()> {
-        
-
-
-
         let mut done = false;
         let mut _mwnt_auto = false;
         let mut prec_mvnt = false;
@@ -78,14 +69,18 @@ impl Game {
                             break;
                         },
                         Commandes::Hold => {
-                            if let Some(tetro) = &self.holded.holded {
-                                let temp = self.g.current_polyomino.polyomino.set_to_init_rotation();
-                                self.g.current_polyomino = PolyominoPosition::from(*tetro);
-                                self.holded.holded = Some(temp);
+                            if let Some(tetro) = &self.hold_container.holded_polyomino {
+                                let temp = self.grid_container.current_polyomino.polyomino.set_to_init_rotation();
+                                self.grid_container.current_polyomino = PolyominoPosition::from(*tetro);
+                                self.hold_container.holded_polyomino = Some(temp);
                             } else {
-                                self.holded.holded = Some(self.g.current_polyomino.polyomino);
-                                self.g.current_polyomino = self.get_prochain();
+                                self.hold_container.holded_polyomino = Some(self.grid_container.current_polyomino.polyomino);
+                                self.grid_container.current_polyomino = self.get_prochain();
                             }
+                        },
+                        Commandes::Quick => {
+                            self.grid_container.current_polyomino.org.0 += self.grid_container.get_distance_preview_polyomino() as i16;
+                            prec_mvnt = true;
                         },
                     };
                     _mwnt_auto = false;
@@ -96,13 +91,13 @@ impl Game {
                 }
 
                 
-                match self.g.current_polyomino.est_bougeable(Direction::D, &self.g.grid){
+                match self.grid_container.current_polyomino.est_bougeable(Direction::D, &self.grid_container.grid){
                     None if prec_mvnt => {
-                        self.g.grid.pose_polyomino(&self.g.current_polyomino);
+                        self.grid_container.grid.pose_polyomino(&self.grid_container.current_polyomino);
                         self.ajoute_poly_queue();
-                        self.g.current_polyomino = self.get_prochain();
+                        self.grid_container.current_polyomino = self.get_prochain();
                         prec_mvnt = false;
-                        if !colision::est_valide(&self.g.grid, &self.g.current_polyomino) {
+                        if !est_valide(&self.grid_container.grid, &self.grid_container.current_polyomino) {
                             println!("Game Over !!");
                             done = true;
                             break;
@@ -112,9 +107,11 @@ impl Game {
                     _ => {},
                 };
                 
+                self.enleve_lignes();
                 for e in self.get_containers().into_iter() {
                     e.update()?;
                 }
+
                 self.stdout.flush()?;
             }
         }
@@ -126,9 +123,9 @@ impl Game {
 
 impl Game {
     pub fn new() -> Self {
-        let c_grille = Grid{
+        let c_grille = Playground {
             current_polyomino: PolyominoPosition::rand(),
-            grid: Grille::new(),
+            grid: Grid::new(),
             contain: param::CONTAINER_GRID,
         };
 
@@ -138,8 +135,8 @@ impl Game {
             contain: param::CONTAINER_NEXT,
         };
 
-        let c_hold = Holder {
-            holded: None,
+        let c_hold = Hold {
+            holded_polyomino: None,
             contain: param::CONTAINER_HOLD,
         };
 
@@ -149,9 +146,9 @@ impl Game {
             stdout: io::stdout(),
             //original_terminal_size: original_terminal_size,
 
-            nexts: c_nexts ,
-            holded: c_hold,
-            g: c_grille,
+            nexts_container: c_nexts ,
+            hold_container: c_hold,
+            grid_container: c_grille,
             speed: 0,
             score: 0,
             //containers: Box::new(vec![&g, &nexts, &holded]),
@@ -176,11 +173,11 @@ impl Game {
 // SPECIALS_GETTERS
 impl Game {
     fn get_num_bag(&self) -> usize {
-        self.nexts.nexts.len() % Forme::COUNT
+        self.nexts_container.nexts.len() % Forme::COUNT
     }
 
     fn get_prochain(&mut self) -> PolyominoPosition {
-        let res_t: Tetromino = self.nexts.nexts.remove(0);
+        let res_t: Tetromino = self.nexts_container.nexts.remove(0);
         PolyominoPosition::from(res_t)
     }
 }
@@ -188,28 +185,27 @@ impl Game {
 // PROCEDURES
 impl Game {
     fn bouge_polyo(&mut self, dir: Direction) -> () {
-        if let Some(p) = self.g.current_polyomino.est_bougeable(dir, &self.g.grid) {
-            self.g.current_polyomino = p;
+        if let Some(p) = self.grid_container.current_polyomino.est_bougeable(dir, &self.grid_container.grid) {
+            self.grid_container.current_polyomino = p;
         }
     }
 
     fn tourne_polyo(&mut self, dir: Direction) {
-        if let Some(p) = self.g.current_polyomino.est_tournable(dir, &self.g.grid) {
-            self.g.current_polyomino = p;
+        if let Some(p) = self.grid_container.current_polyomino.est_tournable(dir, &self.grid_container.grid) {
+            self.grid_container.current_polyomino = p;
         }
     }
 
     fn enleve_lignes(&mut self) {
-        if let Some(t) = self.g.grid.clear_lines() {
+        if let Some(t) = self.grid_container.grid.clear_lines() {
             self.score += t;
         }
     }
 
     fn ajoute_poly_queue(&mut self) {
-        use super::systems::randomness;
         if self.get_num_bag() <= cst::NB_BAG {
-            let bag: randomness::PolyominoBag = randomness::new();
-            bag.into_iter().for_each(|a: Tetromino| self.nexts.nexts.push(a));
+            let bag: PolyominoBag = PolyominoBag::new();
+            bag.into_iter().for_each(|a: Tetromino| self.nexts_container.nexts.push(a));
         }
     }
 }
@@ -240,6 +236,8 @@ impl Game {
             KeyCode::Char('z') => Some(Commandes::Tourne(Direction::R)),
             KeyCode::Char('a') => Some(Commandes::Tourne(Direction::L)),
             KeyCode::Char('d') => Some(Commandes::Hold),
+            KeyCode::Char(' ') => Some(Commandes::Quick),
+
             _ => None,
         }
     }
