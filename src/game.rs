@@ -1,4 +1,3 @@
-
 use std::io;
 use std::io::Write;
 
@@ -20,7 +19,19 @@ const MAX_INTERVAL: u16 = 700;
 const MIN_INTERVAL: u16 = 200;
 const MAX_SPEED: u16 = 20;
 
-use crate::{utils::{direction::{Direction, Rotation},tetromino::{Tetromino, Forme}}, systems::{playground::{data::Playground, grid::Grid, polyomino_position::PolyominoPosition}, next::data::Nexts, hold::data::Hold, mechanics::{colision::est_valide, randomness::PolyominoBag}}, param_const::{param, cst}};
+use crate::{
+    param_const::{cst, param},
+    systems::{
+        hold::data::Hold,
+        mechanics::{colision::est_valide, randomness::PolyominoBag},
+        next::data::Nexts,
+        playground::{data::Playground, grid::Grid, polyomino_position::PolyominoPosition},
+    },
+    utils::{
+        direction::{Direction, Rotation},
+        tetromino::{Forme, Tetromino},
+    },
+};
 pub enum Commandes {
     Quit,
     Tourne(Rotation),
@@ -28,7 +39,6 @@ pub enum Commandes {
     Hold,
     Quick,
 }
-
 
 // #[derive(Debug)]
 // original_terminal_size: (u16, u16),
@@ -41,16 +51,13 @@ pub struct Game {
     score: u16,
 }
 
-
-
-
 // RUNNING CODE
 impl Game {
     pub fn run(&mut self) -> io::Result<()> {
         self.init_playground()?;
 
         let mut done = false;
-        
+
         let mut prec_mvnt = false;
 
         while !done {
@@ -65,55 +72,63 @@ impl Game {
                         Commandes::Quit => {
                             done = true;
                             break;
-                        },
+                        }
                         Commandes::Hold => {
-                            if let Some(tetro) = &self.hold_container.holded_polyomino {
-                                let temp = self.grid_container.current_polyomino.polyomino.set_to_init_rotation();
-                                self.grid_container.current_polyomino = PolyominoPosition::from(*tetro);
-                                self.hold_container.holded_polyomino = Some(temp);
+                            if let Some(t) = self
+                                .hold_container
+                                .switch_with(Some(self.grid_container.current_polyomino.polyomino))
+                            {
+                                self.grid_container.current_polyomino = PolyominoPosition::from(t);
                             } else {
-                                self.hold_container.holded_polyomino = Some(self.grid_container.current_polyomino.polyomino);
                                 self.grid_container.current_polyomino = self.get_prochain();
                             }
-                        },
+                        }
                         Commandes::Quick => {
-                            self.grid_container.current_polyomino.org.0 += self.grid_container.get_distance_preview_polyomino() as i16;
+                            self.grid_container.current_polyomino.org.0 +=
+                                self.grid_container.get_distance_preview_polyomino() as i16;
                             prec_mvnt = true;
-                        },
+                        }
                     };
-
-
                 } else {
                     self.bouge_polyo(Direction::D);
                 }
 
-                
-                match self.grid_container.current_polyomino.est_bougeable(Direction::D, &self.grid_container.grid){
+                match self
+                    .grid_container
+                    .current_polyomino
+                    .est_bougeable(Direction::D, &self.grid_container.grid)
+                {
                     None if prec_mvnt => {
-                        let _ = self.grid_container.grid.pose_polyomino(&self.grid_container.current_polyomino);
+                        let _ = self
+                            .grid_container
+                            .grid
+                            .pose_polyomino(&self.grid_container.current_polyomino);
                         self.ajoute_poly_queue();
                         self.grid_container.current_polyomino = self.get_prochain();
-                        if !est_valide(&self.grid_container.grid, &self.grid_container.current_polyomino) {
+                        if !est_valide(
+                            &self.grid_container.grid,
+                            &self.grid_container.current_polyomino,
+                        ) {
                             println!("Game Over !!");
                             done = true;
                             break;
                         }
-                    },
-                    None => { prec_mvnt = true; now = Instant::now();}
-                    _ => {},
+                    }
+                    None => {
+                        prec_mvnt = true;
+                        now = Instant::now();
+                    }
+                    _ => {}
                 };
-                
+
                 self.enleve_lignes();
-                
+
                 self.update()?;
-                
             }
         }
         self.quit_playground()
     }
 }
-
-
 
 impl Game {
     pub fn new() -> Self {
@@ -123,7 +138,7 @@ impl Game {
             contain: param::CONTAINER_GRID,
         };
 
-        let nexts: Box<Vec<Tetromino>> = Box::new(Vec::with_capacity(cst::NB_BAG+1));
+        let nexts: Box<Vec<Tetromino>> = Box::new(Vec::with_capacity(cst::NB_BAG + 1));
         let c_nexts: Nexts = Nexts {
             nexts: nexts,
             contain: param::CONTAINER_NEXT,
@@ -134,35 +149,29 @@ impl Game {
             contain: param::CONTAINER_HOLD,
         };
 
-
         //let original_terminal_size: (u16, u16) = size().unwrap();
         let mut init_game = Self {
             stdout: io::stdout(),
             //original_terminal_size: original_terminal_size,
-
-            nexts_container: c_nexts ,
+            nexts_container: c_nexts,
             hold_container: c_hold,
             grid_container: c_grille,
             speed: 0,
             score: 0,
             //containers: Box::new(vec![&g, &nexts, &holded]),
         };
-        
+
         // init_game.containers.push(&init_game.g);
         // init_game.containers.push(&init_game.nexts);
         // init_game.containers.push(&init_game.holded);
-        
 
         for _ in 0..cst::NB_BAG {
             init_game.ajoute_poly_queue();
-        } 
+        }
         init_game.get_prochain();
         init_game
     }
 }
-
-
-
 
 // SPECIALS_GETTERS
 impl Game {
@@ -179,13 +188,21 @@ impl Game {
 // PROCEDURES
 impl Game {
     fn bouge_polyo(&mut self, dir: Direction) -> () {
-        if let Some(p) = self.grid_container.current_polyomino.est_bougeable(dir, &self.grid_container.grid) {
+        if let Some(p) = self
+            .grid_container
+            .current_polyomino
+            .est_bougeable(dir, &self.grid_container.grid)
+        {
             self.grid_container.current_polyomino = p;
         }
     }
 
     fn tourne_polyo(&mut self, r: Rotation) {
-        if let Some(p) = self.grid_container.current_polyomino.est_tournable(r, &self.grid_container.grid) {
+        if let Some(p) = self
+            .grid_container
+            .current_polyomino
+            .est_tournable(r, &self.grid_container.grid)
+        {
             self.grid_container.current_polyomino = p;
         }
     }
@@ -199,14 +216,11 @@ impl Game {
     fn ajoute_poly_queue(&mut self) {
         if self.get_num_bag() <= cst::NB_BAG {
             let bag: PolyominoBag = PolyominoBag::new();
-            bag.into_iter().for_each(|a: Tetromino| self.nexts_container.nexts.push(a));
+            bag.into_iter()
+                .for_each(|a: Tetromino| self.nexts_container.nexts.push(a));
         }
     }
 }
-
-
-
-
 
 // INTERACTION  H -> C
 impl Game {

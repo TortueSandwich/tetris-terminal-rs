@@ -31,3 +31,13 @@ impl fmt::Display for NothingHolded {
 }
 
 impl std::error::Error for NothingHolded {}
+
+#[derive(Debug)]
+pub struct EmptyVecAcces;
+impl fmt::Display for EmptyVecAcces {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Hold is not holding a tetro")
+    }
+}
+
+impl std::error::Error for EmptyVecAcces {}

@@ -22,15 +22,14 @@ mod systems {
         pub mod randomness;
         pub mod rotation;
     }
-
 }
 mod utils {
-    pub mod direction;
-    pub mod tetromino;
     pub mod container;
-    pub mod writer;
     pub mod coord;
+    pub mod direction;
     pub mod show_srs;
+    pub mod tetromino;
+    pub mod writer;
 }
 mod affichage;
 mod erreur;
@@ -40,12 +39,9 @@ mod erreur;
 
 use std::env;
 
-
-
 fn main() {
     let args: Vec<String> = env::args().collect();
-    println!("{:?}",args);
-    
+    println!("{:?}", args);
 
     let mut game = game::Game::new();
     if let Err(e) = game.run() {

@@ -1,10 +1,9 @@
 pub mod cst {
     pub const NB_LIGNE_GRILLE: u16 = 20;
     pub const NB_COLONNE_GRILLE: u16 = 10;
-    pub const NB_PREVIEW: u16 = 4;
+    pub const NB_PREVIEW: usize = 4;
     pub const NB_BAG: usize = 2;
 }
-
 
 pub mod param {
     use crossterm::style::Color;
@@ -22,16 +21,15 @@ pub mod param {
     pub const COULEUR_I: Color = Color::AnsiValue(14);
     pub const COULEUR_T: Color = Color::AnsiValue(5);
     pub const COULEUR_O: Color = Color::AnsiValue(11);
-    
-    pub const COULEUR_PREVIEW :Color = Color::AnsiValue(235);
+
+    pub const COULEUR_PREVIEW: Color = Color::AnsiValue(235);
     pub const COULEUR_: Color = Color::AnsiValue(95);
 
     #[allow(unused)]
-    pub const COULEUR_TEST :Color = Color::AnsiValue(1);
+    pub const COULEUR_TEST: Color = Color::AnsiValue(1);
 
-    pub const CONTAINER_HOLD:Container = Container::one_tetro_holder(0, 0);
-    pub const CONTAINER_GRID:Container = Container::default((8, 20), (0, 22));
-    pub const CONTAINER_NEXT:Container = Container::default((24, 24 + 7), (0, cst::NB_PREVIEW*4 + 2));
-
-
+    pub const CONTAINER_HOLD: Container = Container::one_tetro_holder(0, 0);
+    pub const CONTAINER_GRID: Container = Container::default((8, 20), (0, 22));
+    pub const CONTAINER_NEXT: Container =
+        Container::default((24, 24 + 7), (0, cst::NB_PREVIEW as u16 * 4 + 2));
 }

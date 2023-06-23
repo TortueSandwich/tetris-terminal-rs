@@ -1,16 +1,22 @@
-
 use rand::seq::SliceRandom;
 
-use crate::utils::tetromino::{Tetromino, Forme};
+use crate::utils::tetromino::{Forme, Tetromino};
 
-
-pub struct PolyominoBag([Tetromino; 7]);
+pub struct PolyominoBag(pub [Tetromino; 7]);
 
 impl PolyominoBag {
     pub fn new() -> PolyominoBag {
-        let mut formes = [Forme::I, Forme::J, Forme::L, Forme::O, Forme::S, Forme::T, Forme::Z];
+        let mut formes = [
+            Forme::I,
+            Forme::J,
+            Forme::L,
+            Forme::O,
+            Forme::S,
+            Forme::T,
+            Forme::Z,
+        ];
         formes.shuffle(&mut rand::thread_rng());
-    
+
         let bag: [Tetromino; 7] = [
             Tetromino::from(formes[0]),
             Tetromino::from(formes[1]),
@@ -20,17 +26,8 @@ impl PolyominoBag {
             Tetromino::from(formes[5]),
             Tetromino::from(formes[6]),
         ];
-    
+
         PolyominoBag(bag)
-    }
-}
-
-impl IntoIterator for PolyominoBag {
-    type Item = Tetromino;
-    type IntoIter = std::vec::IntoIter<Tetromino>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.to_vec().into_iter()
     }
 }
 

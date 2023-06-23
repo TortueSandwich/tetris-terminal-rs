@@ -1,4 +1,4 @@
-use crate::{systems::playground::{polyomino_position::PolyominoPosition, grid::Grid}};
+use crate::systems::playground::{grid::Grid, polyomino_position::PolyominoPosition};
 
 // pub fn org_is_good(p: &PolyominoPosition) -> Result<(), ()> {
 //     // (0-19,0-20)
@@ -14,8 +14,6 @@ use crate::{systems::playground::{polyomino_position::PolyominoPosition, grid::G
 //     }
 //     Ok(())
 // }
-
-
 
 pub fn est_valide(g: &Grid, p: &PolyominoPosition) -> bool {
     for co in p.to_coord() {

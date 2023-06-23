@@ -25,9 +25,8 @@ impl PolyominoPosition {
             }
         }
         false
-    }  
+    }
 }
-
 
 impl PolyominoPosition {
     pub fn est_bougeable(&self, dir: Direction, g: &Grid) -> Option<PolyominoPosition> {
@@ -61,8 +60,6 @@ impl PolyominoPosition {
         Some(moke)
     }
 
-
-
     pub fn est_tournable(&mut self, r: Rotation, g: &Grid) -> Option<PolyominoPosition> {
         self.srs(r, g)
     }
@@ -70,6 +67,8 @@ impl PolyominoPosition {
 
 impl From<Tetromino> for PolyominoPosition {
     fn from(value: Tetromino) -> Self {
+        // let mut v = value.clone();
+        // v.coordonne.current_value = 0;
         PolyominoPosition {
             org: (0, 3),
             polyomino: value,
@@ -104,7 +103,6 @@ impl PolyominoPosition {
         self.polyomino.color()
     }
 }
-
 
 impl PolyominoPosition {
     pub fn get_preview_polyomino_position(&self, g: &Grid) -> PolyominoPosition {

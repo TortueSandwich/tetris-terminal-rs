@@ -9,26 +9,24 @@ use crossterm::{
     Result,
 };
 
-use std::io::Write;
 use crate::{game::Game, utils::container::ContainTrait};
+use std::io::Write;
 
 pub fn new_terminal() -> io::Result<()> {
     let mut w = io::stdout();
     execute!(w, EnterAlternateScreen)?;
     terminal::enable_raw_mode()?;
-    execute!(
-        w,
-        ResetColor,
-        terminal::Clear(ClearType::All),
-        cursor::Hide,
-    )?;
+    execute!(w, ResetColor, terminal::Clear(ClearType::All), cursor::Hide,)?;
     Ok(())
 }
 
-
 impl Game {
-    fn get_containers(&self) -> Vec<&dyn ContainTrait>{
-        vec![&self.grid_container, &self.nexts_container, &self.hold_container]
+    fn get_containers(&self) -> Vec<&dyn ContainTrait> {
+        vec![
+            &self.grid_container,
+            &self.nexts_container,
+            &self.hold_container,
+        ]
     }
     pub fn update(&mut self) -> io::Result<()> {
         for e in self.get_containers().into_iter() {
@@ -38,7 +36,6 @@ impl Game {
         Ok(())
     }
 }
-
 
 impl Game {
     pub fn init_playground(&mut self) -> Result<()> {
@@ -50,25 +47,13 @@ impl Game {
         Ok(())
     }
 
-    pub fn quit_playground(&self) -> io::Result<()>{
+    pub fn quit_playground(&self) -> io::Result<()> {
         let mut w = &self.stdout;
         execute!(w, ResetColor, terminal::Clear(ClearType::All), cursor::Show)?;
         terminal::disable_raw_mode()?;
         execute!(w, LeaveAlternateScreen)
     }
-    
 }
-
-
-
-
-
-
-
-
-
-
-
 
 // // GRILLE
 // impl Game {
@@ -145,7 +130,6 @@ impl Game {
 //     }
 // }
 
-
 // // UTILS
 // impl Game {
 //     fn draw_square(&self, xs:(u16, u16), ys:(u16, u16),) -> io::Result<()> {
@@ -175,7 +159,6 @@ impl Game {
 //     }
 // }
 
-
 // // NEXTS
 // impl Game {
 //     pub fn draw_nexts_window(&self) -> io::Result<()> {
@@ -189,7 +172,7 @@ impl Game {
 //             let tetro = self.nexts[i as usize];
 //             for t in tetro.to_coord() {
 //                 let mut x = (t.1 as u16 + 1)*2 + param::POSITION_NEXT.0.0 + 2;
-//                 if tetro.forme() == Forme::I { x -= 1} 
+//                 if tetro.forme() == Forme::I { x -= 1}
 //                 let y = t.0 as u16 + 1 + param::POSITION_NEXT.1.0 + 1;
 //                 queue!(
 //                     w,
@@ -213,13 +196,12 @@ impl Game {
 //                     SetBackgroundColor(to_ansi_color(param::COULEUR_)),
 //                     Print("  "),
 //                     SetBackgroundColor(Color::Reset)
-//                 )?; 
+//                 )?;
 //             }
 //         }
 //         Ok(())
 //     }
 // }
-
 
 // // HOLD
 // impl Game {
@@ -238,7 +220,7 @@ impl Game {
 //             Some(tetro) => {
 //                 for t in tetro.to_coord() {
 //                     let mut x = (t.1 as u16 + 1)*2 + param::POSITION_HOLD.0.0 + 1;
-//                     if tetro.forme() == Forme::I { x -= 1} 
+//                     if tetro.forme() == Forme::I { x -= 1}
 //                     let y = t.0 as u16 + 1 + param::POSITION_HOLD.1.0 + 1;
 //                     queue!(
 //                         w,
@@ -262,7 +244,7 @@ impl Game {
 //                     SetBackgroundColor(to_ansi_color(param::COULEUR_)),
 //                     Print("  "),
 //                     SetBackgroundColor(Color::Reset)
-//                 )?; 
+//                 )?;
 //             }
 //         }
 //         Ok(())
