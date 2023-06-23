@@ -80,7 +80,7 @@ impl Game {
                             {
                                 self.grid_container.current_polyomino = PolyominoPosition::from(t);
                             } else {
-                                self.grid_container.current_polyomino = self.get_prochain();
+                                self.grid_container.current_polyomino = self.next_tetromino();
                             }
                         }
                         Commandes::Quick => {
@@ -103,8 +103,7 @@ impl Game {
                             .grid_container
                             .grid
                             .pose_polyomino(&self.grid_container.current_polyomino);
-                        self.ajoute_poly_queue();
-                        self.grid_container.current_polyomino = self.get_prochain();
+                        self.grid_container.current_polyomino = self.next_tetromino();
                         if !est_valide(
                             &self.grid_container.grid,
                             &self.grid_container.current_polyomino,
@@ -138,11 +137,8 @@ impl Game {
             contain: param::CONTAINER_GRID,
         };
 
-        let nexts: Box<Vec<Tetromino>> = Box::new(Vec::with_capacity(cst::NB_BAG + 1));
-        let c_nexts: Nexts = Nexts {
-            nexts: nexts,
-            contain: param::CONTAINER_NEXT,
-        };
+        let c_nexts = Nexts::new();
+
 
         let c_hold = Hold {
             holded_polyomino: None,
@@ -165,23 +161,26 @@ impl Game {
         // init_game.containers.push(&init_game.nexts);
         // init_game.containers.push(&init_game.holded);
 
-        for _ in 0..cst::NB_BAG {
-            init_game.ajoute_poly_queue();
-        }
-        init_game.get_prochain();
+        init_game.grid_container.current_polyomino = init_game.next_tetromino();
         init_game
     }
 }
 
 // SPECIALS_GETTERS
 impl Game {
-    fn get_num_bag(&self) -> usize {
-        self.nexts_container.nexts.len() % Forme::COUNT
+    // fn get_num_bag(&self) -> usize {
+    //     self.nexts_container.nexts.len() % Forme::COUNT
+    // }
+
+    fn next_tetromino(&mut self) -> PolyominoPosition {
+        match self.nexts_container.take_next(){
+            Err(e) => panic!("{e}"),
+            Ok(t) => PolyominoPosition::from(t),
+        }
     }
 
-    fn get_prochain(&mut self) -> PolyominoPosition {
-        let res_t: Tetromino = self.nexts_container.nexts.remove(0);
-        PolyominoPosition::from(res_t)
+    fn set_next_polyomino(&mut self) {
+        self.grid_container.current_polyomino = PolyominoPosition::from(self.next_tetromino());
     }
 }
 
@@ -213,13 +212,13 @@ impl Game {
         }
     }
 
-    fn ajoute_poly_queue(&mut self) {
-        if self.get_num_bag() <= cst::NB_BAG {
-            let bag: PolyominoBag = PolyominoBag::new();
-            bag.into_iter()
-                .for_each(|a: Tetromino| self.nexts_container.nexts.push(a));
-        }
-    }
+    // fn ajoute_poly_queue(&mut self) {
+    //     if self.get_num_bag() <= cst::NB_BAG {
+    //         let bag: PolyominoBag = PolyominoBag::new();
+    //         bag.into_iter()
+    //             .for_each(|a: Tetromino| self.nexts_container.nexts.push(a));
+    //     }
+    // }
 }
 
 // INTERACTION  H -> C

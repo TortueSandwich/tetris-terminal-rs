@@ -2,9 +2,14 @@
 
 Tetris in terminal code in rust
 
+I'm currently learning so if you have tips feel free to colaborate
 
+## Controls
 
-Many things todo like doc, english variable name and other
-This is comming very soon
+A : rotate left
+Z : rotate right
+D : hold
+Else arrow key to move
 
-I'm currently learning so if you have tips do not hesitate
+====
+srs is implemented

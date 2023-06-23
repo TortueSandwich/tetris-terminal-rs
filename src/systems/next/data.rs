@@ -26,7 +26,7 @@ impl Nexts {
             return Err(EmptyVecAcces);
         }
 
-        if let Some(t) = self.nexts.front() {
+        if let Some(t) = self.nexts.pop_front() {
             let res = t.to_owned();
             self.fill_in();
             return Ok(res);
