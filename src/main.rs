@@ -30,14 +30,26 @@ mod utils {
     pub mod container;
     pub mod writer;
     pub mod coord;
+    pub mod show_srs;
 }
 mod affichage;
+mod erreur;
 
 //use crossterm::{style::SetAttribute, terminal};
 // use std::io;
 
+use std::env;
+
+
+
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    println!("{:?}",args);
+    
+
     let mut game = game::Game::new();
-    let _ = game.run();
-    //crate::game::Game::new(stdout(), 10, 20).run();
+    if let Err(e) = game.run() {
+        let _ = game.quit_playground();
+        panic!("{e}");
+    }
 }

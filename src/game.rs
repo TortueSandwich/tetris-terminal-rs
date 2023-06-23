@@ -20,10 +20,10 @@ const MAX_INTERVAL: u16 = 700;
 const MIN_INTERVAL: u16 = 200;
 const MAX_SPEED: u16 = 20;
 
-use crate::{utils::{direction::Direction, container::ContainTrait, tetromino::{Tetromino, Forme}}, systems::{playground::{data::Playground, grid::Grid, polyomino_position::PolyominoPosition}, next::data::Nexts, hold::data::Hold, mechanics::{colision::est_valide, randomness::PolyominoBag}}, param_const::{param, cst}};
+use crate::{utils::{direction::{Direction, Rotation}, container::ContainTrait, tetromino::{Tetromino, Forme}}, systems::{playground::{data::Playground, grid::Grid, polyomino_position::PolyominoPosition}, next::data::Nexts, hold::data::Hold, mechanics::{colision::est_valide, randomness::PolyominoBag}}, param_const::{param, cst}};
 pub enum Commandes {
     Quit,
-    Tourne(Direction),
+    Tourne(Rotation),
     Bouge(Direction),
     Hold,
     Quick,
@@ -59,10 +59,7 @@ impl Game {
                 if let Some(command) = self.get_command(interval - now.elapsed()) {
                     prec_mvnt = false;
                     match command {
-                        Commandes::Tourne(t) => match t {
-                            Direction::R | Direction::L => self.tourne_polyo(t),
-                            _ => unreachable!("Tourne à echoué"),
-                        },
+                        Commandes::Tourne(t) => self.tourne_polyo(t),
                         Commandes::Bouge(t) => self.bouge_polyo(t),
                         Commandes::Quit => {
                             done = true;
@@ -93,7 +90,7 @@ impl Game {
                 
                 match self.grid_container.current_polyomino.est_bougeable(Direction::D, &self.grid_container.grid){
                     None if prec_mvnt => {
-                        self.grid_container.grid.pose_polyomino(&self.grid_container.current_polyomino);
+                        self.grid_container.grid.pose_polyomino(&self.grid_container.current_polyomino)?;
                         self.ajoute_poly_queue();
                         self.grid_container.current_polyomino = self.get_prochain();
                         prec_mvnt = false;
@@ -190,8 +187,8 @@ impl Game {
         }
     }
 
-    fn tourne_polyo(&mut self, dir: Direction) {
-        if let Some(p) = self.grid_container.current_polyomino.est_tournable(dir, &self.grid_container.grid) {
+    fn tourne_polyo(&mut self, r: Rotation) {
+        if let Some(p) = self.grid_container.current_polyomino.est_tournable(r, &self.grid_container.grid) {
             self.grid_container.current_polyomino = p;
         }
     }
@@ -233,8 +230,8 @@ impl Game {
                     None
                 }
             }
-            KeyCode::Char('z') => Some(Commandes::Tourne(Direction::R)),
-            KeyCode::Char('a') => Some(Commandes::Tourne(Direction::L)),
+            KeyCode::Char('z') => Some(Commandes::Tourne(Rotation::ClockWise)),
+            KeyCode::Char('a') => Some(Commandes::Tourne(Rotation::CounterClockWise)),
             KeyCode::Char('d') => Some(Commandes::Hold),
             KeyCode::Char(' ') => Some(Commandes::Quick),
 
