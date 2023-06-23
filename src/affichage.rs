@@ -2,7 +2,7 @@ use std::io;
 //use std::io::{stdout, Write};
 
 use crossterm::{
-    cursor, execute, queue,
+    cursor, execute,
     style::ResetColor,
     terminal,
     terminal::{ClearType, EnterAlternateScreen, LeaveAlternateScreen},
@@ -10,34 +10,49 @@ use crossterm::{
 };
 
 use std::io::Write;
-use crate::game::Game;
+use crate::{game::Game, utils::container::ContainTrait};
+
+pub fn new_terminal() -> io::Result<()> {
+    let mut w = io::stdout();
+    execute!(w, EnterAlternateScreen)?;
+    terminal::enable_raw_mode()?;
+    execute!(
+        w,
+        ResetColor,
+        terminal::Clear(ClearType::All),
+        cursor::Hide,
+    )?;
+    Ok(())
+}
 
 
-// pub fn to_ansi_color(col: &str) -> Color {
-//     Color::parse_ansi(&*format!("5;{}", col)).unwrap()
-// }
+impl Game {
+    fn get_containers(&self) -> Vec<&dyn ContainTrait>{
+        vec![&self.grid_container, &self.nexts_container, &self.hold_container]
+    }
+    pub fn update(&mut self) -> io::Result<()> {
+        for e in self.get_containers().into_iter() {
+            e.update()?;
+        }
+        self.stdout.flush()?;
+        Ok(())
+    }
+}
+
 
 impl Game {
     pub fn init_playground(&mut self) -> Result<()> {
-        let mut w = &self.stdout;
-        execute!(w, EnterAlternateScreen)?;
-        terminal::enable_raw_mode()?;
-        queue!(
-            w,
-            ResetColor,
-            terminal::Clear(ClearType::All),
-            cursor::Hide,
-        )?;
+        new_terminal()?;
         for e in self.get_containers().iter() {
-            let _ = e.init();
+            e.init()?;
         }
-        let _ = self.stdout.flush();
+        self.stdout.flush()?;
         Ok(())
     }
 
     pub fn quit_playground(&self) -> io::Result<()>{
         let mut w = &self.stdout;
-        queue!(w, ResetColor, terminal::Clear(ClearType::All), cursor::Show)?;
+        execute!(w, ResetColor, terminal::Clear(ClearType::All), cursor::Show)?;
         terminal::disable_raw_mode()?;
         execute!(w, LeaveAlternateScreen)
     }

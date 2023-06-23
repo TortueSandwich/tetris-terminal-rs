@@ -20,7 +20,7 @@ const MAX_INTERVAL: u16 = 700;
 const MIN_INTERVAL: u16 = 200;
 const MAX_SPEED: u16 = 20;
 
-use crate::{utils::{direction::{Direction, Rotation}, container::ContainTrait, tetromino::{Tetromino, Forme}}, systems::{playground::{data::Playground, grid::Grid, polyomino_position::PolyominoPosition}, next::data::Nexts, hold::data::Hold, mechanics::{colision::est_valide, randomness::PolyominoBag}}, param_const::{param, cst}};
+use crate::{utils::{direction::{Direction, Rotation},tetromino::{Tetromino, Forme}}, systems::{playground::{data::Playground, grid::Grid, polyomino_position::PolyominoPosition}, next::data::Nexts, hold::data::Hold, mechanics::{colision::est_valide, randomness::PolyominoBag}}, param_const::{param, cst}};
 pub enum Commandes {
     Quit,
     Tourne(Rotation),
@@ -41,17 +41,18 @@ pub struct Game {
     score: u16,
 }
 
+
+
+
 // RUNNING CODE
 impl Game {
-    pub fn get_containers(&self) -> Vec<&dyn ContainTrait>{
-        vec![&self.grid_container, &self.nexts_container, &self.hold_container]
-    }
-
     pub fn run(&mut self) -> io::Result<()> {
-        let mut done = false;
-        let mut _mwnt_auto = false;
-        let mut prec_mvnt = false;
         self.init_playground()?;
+
+        let mut done = false;
+        
+        let mut prec_mvnt = false;
+
         while !done {
             let interval = self.calculate_interval();
             let mut now = Instant::now();
@@ -80,20 +81,18 @@ impl Game {
                             prec_mvnt = true;
                         },
                     };
-                    _mwnt_auto = false;
+
 
                 } else {
                     self.bouge_polyo(Direction::D);
-                    _mwnt_auto = true;
                 }
 
                 
                 match self.grid_container.current_polyomino.est_bougeable(Direction::D, &self.grid_container.grid){
                     None if prec_mvnt => {
-                        self.grid_container.grid.pose_polyomino(&self.grid_container.current_polyomino)?;
+                        let _ = self.grid_container.grid.pose_polyomino(&self.grid_container.current_polyomino);
                         self.ajoute_poly_queue();
                         self.grid_container.current_polyomino = self.get_prochain();
-                        prec_mvnt = false;
                         if !est_valide(&self.grid_container.grid, &self.grid_container.current_polyomino) {
                             println!("Game Over !!");
                             done = true;
@@ -105,11 +104,9 @@ impl Game {
                 };
                 
                 self.enleve_lignes();
-                for e in self.get_containers().into_iter() {
-                    e.update()?;
-                }
-
-                self.stdout.flush()?;
+                
+                self.update()?;
+                
             }
         }
         self.quit_playground()
