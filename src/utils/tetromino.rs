@@ -72,7 +72,7 @@ impl Tetromino {
         self.f.color()
     }
 
-    pub fn set_to_init_rotation(&mut self) -> Tetromino {
+    pub fn with_init_rotation(&mut self) -> Tetromino {
         self.coordonne.current_value = 0;
         *self
     }
@@ -139,6 +139,10 @@ impl Tetromino {
                 Ok(())
             }
         }
+    }
+
+    pub fn set_default_pos(&mut self) {
+        self.coordonne.current_value = 0;
     }
 
     pub fn to_coord(&self) -> Vec<(i16, i16)> {

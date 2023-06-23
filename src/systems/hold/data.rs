@@ -26,6 +26,7 @@ impl Hold {
             Err(AlreadyHolding)
         } else {
             self.holded_polyomino = t;
+            self.holded_polyomino = Some(self.get_holded().unwrap().with_init_rotation());
             Ok(())
         }
     }
@@ -41,7 +42,9 @@ impl Hold {
 
     pub fn switch_with(&mut self, t: Option<Tetromino>) -> Option<Tetromino> {
         if self.is_holding() {
-            mem::replace(&mut self.holded_polyomino, t)
+            let mut m = t;
+            m = Some(m.unwrap().with_init_rotation());
+            mem::replace(&mut self.holded_polyomino, m)
         } else {
             if let Err(e) = self.set_holded(t) {
                 panic!("Error while holding :\n{e}\n\n");
