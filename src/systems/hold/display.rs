@@ -1,5 +1,5 @@
-use crate::{utils::{container::*,  writer::draw_tetromino}};
 use super::data::Hold;
+use crate::utils::{container::*, writer::draw_tetromino};
 
 impl ContainTrait for Hold {
     fn draw_inside(&self) -> std::io::Result<()> {

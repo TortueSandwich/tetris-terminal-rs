@@ -1,4 +1,7 @@
-use crate::{utils::{tetromino::Tetromino, container::*}, erreur::{AlreadyHolding, NothingHolded}};
+use crate::{
+    erreur::{AlreadyHolding, NothingHolded},
+    utils::{container::*, tetromino::Tetromino},
+};
 use std::mem;
 
 pub struct Hold {
@@ -26,12 +29,11 @@ impl Hold {
             Ok(())
         }
     }
-    
 
     pub fn take_holded(&mut self) -> Result<Option<Tetromino>, NothingHolded> {
         if self.is_none() {
             Err(NothingHolded)
-        } else  {
+        } else {
             let res = self.holded_polyomino.take();
             Ok(res)
         }
@@ -41,7 +43,9 @@ impl Hold {
         if self.is_holding() {
             mem::replace(&mut self.holded_polyomino, t)
         } else {
-            self.set_holded(t);
+            if let Err(e) = self.set_holded(t) {
+                panic!("Error while holding :\n{e}\n\n");
+            }
             None
         }
     }
