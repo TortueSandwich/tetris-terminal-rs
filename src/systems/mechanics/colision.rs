@@ -19,7 +19,7 @@ use crate::{systems::playground::{polyomino_position::PolyominoPosition, grid::G
 
 pub fn est_valide(g: &Grid, p: &PolyominoPosition) -> bool {
     for co in p.to_coord() {
-        if g.est_rempli(co) {
+        if g.is_filled(co.1 as usize, co.0 as usize).unwrap() {
             return false;
         }
     }

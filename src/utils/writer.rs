@@ -14,6 +14,19 @@ pub fn queue_draw(x: u16, y: u16, color:Color) -> io::Result<()> {
     )
 }
 
+pub fn quit_quit(){
+    use crossterm::terminal::ClearType;
+    use crossterm::cursor;
+    use crossterm::terminal;
+    use crossterm::style::ResetColor;
+    use crossterm::execute;
+    use crossterm::terminal::LeaveAlternateScreen;
+    let mut w = io::stdout();
+    let _ = queue!(w, ResetColor, terminal::Clear(ClearType::All), cursor::Show);
+    let _ = terminal::disable_raw_mode();
+    let _ = execute!(w, LeaveAlternateScreen);
+}
+
 pub fn draw_tetromino(t:&Tetromino, c: &Container) -> io::Result<()> {
     let mut w = io::stdout();
     for co in t.to_coord() {

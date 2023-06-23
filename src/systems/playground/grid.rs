@@ -5,8 +5,10 @@
 use std::ops::{Index, IndexMut};
 
 use super::polyomino_position::{Coord, PolyominoPosition};
+use crate::erreur::InvalidCoordinatesError;
 use crate::param_const::cst;
 use crate::utils::tetromino::Forme;
+use crate::utils::writer::quit_quit;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Case {
@@ -21,16 +23,25 @@ impl Case {
             Case::Empty => crate::param_const::param::COULEUR_,
         }
     }
+    pub fn is_filled(&self) -> bool {
+        *self != Case::Empty
+    }
 }
 
 
 #[derive(Clone, Copy)]
 pub struct Grid (
-    pub [[Case; cst::NB_COLONNE_GRILLE as usize]; cst::NB_LIGNE_GRILLE as usize],
+    pub [[Case; Self::X_LEN as usize]; Self::Y_LEN as usize],
 );
 
+#[allow(unused)]
+impl Grid {
+    pub const X_LEN : u16 = cst::NB_COLONNE_GRILLE;
+    pub const Y_LEN : u16 = cst::NB_LIGNE_GRILLE;
+}
+
 impl Index<usize> for Grid {
-    type Output = [Case; cst::NB_COLONNE_GRILLE as usize];
+    type Output = [Case; Self::X_LEN as usize];
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
     }
@@ -44,67 +55,78 @@ impl IndexMut<usize> for Grid {
 
 
 impl Grid {
-    // :)
-    fn len(&self) -> usize {
-        self.0.len()
+    fn validate_coordinates(x: usize, y: usize) -> Result<(), InvalidCoordinatesError> {
+        if x >= Self::X_LEN as usize || y >= Self::Y_LEN as usize {
+            return Err(InvalidCoordinatesError);
+        }
+        Ok(())
     }
+    
     pub fn new() -> Grid {
-        Grid ([[Case::Empty; cst::NB_COLONNE_GRILLE as usize]; cst::NB_LIGNE_GRILLE as usize])
+        Grid([[Case::Empty; Self::X_LEN as usize]; Self::Y_LEN as usize])
     }
-
-    fn get_case(&self, co: Coord) -> &Case {
-        &self[co.0 as usize][co.1 as usize]
+    
+    pub fn get_case(&self, x: usize, y: usize) -> Result<&Case, InvalidCoordinatesError> {
+        Self::validate_coordinates(x, y)?;
+        Ok(&self.0[y][x])
     }
-
-    fn get_case_mut(&mut self, co: Coord) -> &mut Case {
-        &mut self[co.0 as usize][co.1 as usize]
+    
+    pub fn get_case_mut(&mut self, x: usize, y: usize) -> Result<&mut Case, InvalidCoordinatesError> {
+        Self::validate_coordinates(x, y)?;
+        Ok(&mut self.0[y][x])
     }
-
-    pub fn get_couleur_case(&self, co: (u16,u16)) -> crossterm::style::Color {
-        self.get_case((co.0 as i16, co.1 as i16)).color()
-    }
-
-    pub fn est_rempli(&self, co: Coord) -> bool {
-        *self.get_case(co) != Case::Empty
-    }
-}
-
-impl Grid {
-    fn pose_case(&mut self, co: Coord, p: Forme) {
-        *self.get_case_mut(co) = Case::Filled(p);
-    }
-
-    pub fn pose_polyomino(&mut self, p: &PolyominoPosition) {
-        let positions: Vec<Coord> = p.to_coord();
-        for pos in positions {
-            self.pose_case(pos, p.forme());
+    
+    
+    pub fn get_couleur_case(&self, x: usize, y: usize) -> Result<crossterm::style::Color, InvalidCoordinatesError> {
+        match self.get_case(x, y) {
+            Ok(case) => Ok(case.color()),
+            Err(err) => Err(err),
         }
     }
+    
+    pub fn is_filled(&self, x: usize, y: usize) -> Result<bool, InvalidCoordinatesError> {
+        match self.get_case(x, y) {
+            Ok(case) => Ok(case.is_filled()),
+            Err(err) => Err(err),
+        }
+    }
+    
+}
 
-    #[allow(unused)]
-    pub fn est_posable(&self, p: &PolyominoPosition) -> Result<(), ()> {
+
+impl Grid {
+    fn pose_case(&mut self, x: usize, y: usize, p: Forme) -> Result<(), InvalidCoordinatesError> {
+        Self::validate_coordinates(x, y)?;
+        *self.get_case_mut(x, y)? = Case::Filled(p);
+        Ok(())
+    }
+    
+    pub fn pose_polyomino(&mut self, p: &PolyominoPosition) -> Result<(), InvalidCoordinatesError> {
         let positions: Vec<Coord> = p.to_coord();
         for pos in positions {
-            if self.est_rempli(pos) {
-                return Err(());
+            if let Err(e) = self.pose_case(pos.1 as usize, pos.0 as usize, p.forme()) {
+                quit_quit();
+                panic!("Erreur lors de la pose du polyomino {p:?} :\n{e}");
             }
         }
         Ok(())
     }
+
 }
+
 
 impl Grid {
     fn line_is_full(&self, row:usize) -> bool {
         self[row].iter().all(|&cell| cell != Case::Empty)
     }
     fn reset_line(&mut self, row:usize) {
-        let new_row = [Case::Empty; cst::NB_COLONNE_GRILLE as usize];
+        let new_row = [Case::Empty; Self::X_LEN as usize];
         self[row] = new_row;
     }
 
-    pub fn clear_lines(&mut self) -> Option<u16> {
-        let mut num_cleared = 0;
-        for row in (0..self.len()).rev() {
+    pub fn clear_lines(&mut self) -> Option<u16> { // OPtion ???
+        let mut num_cleared:usize = 0;
+        for row in (0..Self::Y_LEN as usize).rev() {
             if self.line_is_full(row) {
                 num_cleared += 1;
             } else if num_cleared > 0 {
@@ -116,7 +138,7 @@ impl Grid {
         }
 
         if num_cleared == 0 { None }
-        else { Some(num_cleared as u16) }
+        else { Some(num_cleared.try_into().unwrap()) }
     }
 }
 

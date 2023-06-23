@@ -5,6 +5,7 @@ pub struct Hold {
     pub contain: Container,
 }
 
+#[allow(unused)]
 impl Hold {
     fn is_holding(&self) -> bool {
         self.holded_polyomino.is_some()

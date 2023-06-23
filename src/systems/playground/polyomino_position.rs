@@ -1,37 +1,33 @@
 use crate::utils::{
-    direction::Direction,
+    direction::{Direction, Rotation},
     tetromino::{Forme, Tetromino},
 };
-
-use crate::param_const::cst;
 
 use super::grid::Grid;
 pub type Coord = (i16, i16);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PolyominoPosition {
     pub org: Coord,
     pub polyomino: Tetromino,
 }
 
 impl PolyominoPosition {
-    pub fn get_preview_polyomino_position(&self, g: &Grid) -> PolyominoPosition {
-        let mut moke = self.clone();
-        while let Some(t) = moke.est_bougeable(Direction::D, g) {
-            moke = t;
+    pub fn collides_with(&self, grid: &Grid) -> bool {
+        let positions = self.to_coord();
+        for pos in positions {
+            if let Some(case) = grid.get_case(pos.1 as usize, pos.0 as usize).ok() {
+                if case.is_filled() {
+                    return true;
+                }
+            } else {
+                return true;
+            }
         }
-        moke
-    }
+        false
+    }  
 }
 
-
-fn co_est_invalide(c:(i16,i16)) -> bool {
-    let (x,y) = c;
-       x < 0
-    || x >= cst::NB_LIGNE_GRILLE as i16
-    || y < 0
-    || y >= cst::NB_COLONNE_GRILLE as i16
-}
 
 impl PolyominoPosition {
     pub fn est_bougeable(&self, dir: Direction, g: &Grid) -> Option<PolyominoPosition> {
@@ -46,13 +42,16 @@ impl PolyominoPosition {
         };
 
         for c in self.to_coord() {
-            let new_row = c.0 + row_delta;
-            let new_col = c.1 + col_delta;
-            let co = (new_row, new_col); 
-            if co_est_invalide(co) {
+            let new_row = (c.0 + row_delta) as usize;
+            let new_col = (c.1 + col_delta) as usize;
+            if new_row >= Grid::Y_LEN as usize || new_col >= Grid::X_LEN as usize {
                 return None;
             }
-            if g.est_rempli(co) {
+            if let Some(case) = g.get_case(new_col, new_row).ok() {
+                if case.is_filled() {
+                    return None;
+                }
+            } else {
                 return None;
             }
         }
@@ -64,17 +63,8 @@ impl PolyominoPosition {
 
 
 
-    pub fn est_tournable(&mut self, dir: Direction, g: &Grid) -> Option<PolyominoPosition> {
-        let mut moke = self.clone();
-        if let Err(_) = moke.polyomino.basic_rotation(dir) {
-            return None;
-        }
-        for co in moke.to_coord() {
-            if co_est_invalide(co) || g.est_rempli(co) {
-                return None;
-            }
-        }
-        Some(moke)
+    pub fn est_tournable(&mut self, r: Rotation, g: &Grid) -> Option<PolyominoPosition> {
+        self.srs(r, g)
     }
 }
 
@@ -91,8 +81,6 @@ impl PolyominoPosition {
     pub fn rand() -> Self {
         Self::from(Tetromino::rand())
     }
-
-    
 
     pub fn to_coord(&self) -> Vec<Coord> {
         let it: Vec<Coord> = self.polyomino.to_coord();
@@ -112,7 +100,18 @@ impl PolyominoPosition {
         self.polyomino.forme()
     }
 
-    pub fn code_ansi(&self) -> crossterm::style::Color {
+    pub fn color(&self) -> crossterm::style::Color {
         self.polyomino.color()
+    }
+}
+
+
+impl PolyominoPosition {
+    pub fn get_preview_polyomino_position(&self, g: &Grid) -> PolyominoPosition {
+        let mut moke = self.clone();
+        while let Some(t) = moke.est_bougeable(Direction::D, g) {
+            moke = t;
+        }
+        moke
     }
 }

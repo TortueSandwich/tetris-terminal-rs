@@ -1,4 +1,4 @@
-use crate::{utils::{container::*, tetromino::Forme, writer::draw_tetromino}, param_const::param};
+use crate::{utils::{container::*,  writer::draw_tetromino}};
 use std::io;
 use super::data::Hold;
 #[allow(unused_imports)]

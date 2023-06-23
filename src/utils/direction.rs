@@ -5,3 +5,9 @@ pub enum Direction {
     D,
     R,
 }
+
+#[derive(Debug, Clone)]
+pub enum Rotation {
+    ClockWise,
+    CounterClockWise,
+}

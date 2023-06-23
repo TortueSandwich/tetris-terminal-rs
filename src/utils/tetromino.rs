@@ -1,9 +1,9 @@
 mod rotations_const;
-use super::direction::Direction;
+use super::direction::Rotation;
 use rand;
 use rotations_const::{AbsCoord, RotationArray};
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Forme {
     I,
     J,
@@ -47,10 +47,10 @@ impl Forme {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Tetromino {
     f: Forme,
-    coordonne: RotationElement,
+    pub coordonne: RotationElement,
 }
 
 impl From<Forme> for Tetromino {
@@ -78,9 +78,9 @@ impl Tetromino {
     }
 }
 
-#[derive(Clone, Copy)]
-struct RotationElement {
-    current_value: usize,
+#[derive(Clone, Copy, Debug)]
+pub struct RotationElement {
+    pub current_value: usize,
     arr_rotation: &'static RotationArray,
 }
 
@@ -125,33 +125,21 @@ impl RotationElement {
 }
 
 impl Tetromino {
-    pub fn basic_rotation(&mut self, dir: Direction) -> Result<(), String> {
-        use Direction::*;
-        match dir {
-            L => {
+    pub fn basic_rotation(&mut self, r: Rotation) -> Result<(), String> {
+        use Rotation::*;
+        match r {
+            CounterClockWise => {
                 let prev = self.coordonne.prev();
                 self.coordonne = prev;
                 Ok(())
             }
-            R => {
+            ClockWise => {
                 let next = self.coordonne.next();
                 self.coordonne = next;
                 Ok(())
             }
-            _ => Err(format!(
-                "La direction entrée n'est pas acceptée lors d'une rotation : {:?}",
-                dir
-            )),
         }
     }
-
-    // pub fn to_coord(&self) -> Vec<(i16, i16)> {
-    //     self.coordonne
-    //         .to_vec()
-    //         .iter()
-    //         .map(|c| (c.0 as i16, c.1 as i16))
-    //         .collect()
-    // }
 
     pub fn to_coord(&self) -> Vec<(i16, i16)> {
         self.coordonne
