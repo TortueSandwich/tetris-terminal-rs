@@ -1,4 +1,4 @@
-use std::io;
+use std::{arch::x86_64::_mm_test_all_zeros, io};
 
 #[allow(unused_imports)]
 use crossterm::{
@@ -9,7 +9,13 @@ use crossterm::{
     Result,
 };
 
-use crate::{param_const::cst, utils::{container::{ContainTrait, Container}, writer::draw_tetromino}};
+use crate::{
+    param_const::cst,
+    utils::{
+        container::{ContainTrait, Container},
+        writer::draw_tetromino,
+    },
+};
 
 use super::data::Nexts;
 impl ContainTrait for Nexts {
@@ -19,10 +25,13 @@ impl ContainTrait for Nexts {
     fn draw_inside(&self) -> io::Result<()> {
         let super_cont = self.get_container();
         for i in 0..cst::NB_PREVIEW as u16 {
-            let tetro = &self.nexts[i as usize];
-            let c = Container::one_tetro_holder(super_cont.co_x.0+1, super_cont.co_y.0 + i*4);
-
-            draw_tetromino(tetro, &c)?;
+            let tetro = self.get(i as usize);
+            if let Some(t) = tetro {
+                let c = Container::one_tetro_holder(super_cont.co_x.0, super_cont.co_y.0 + i * 4);
+                draw_tetromino(t, &c)?;
+            } else {
+                panic!("Could not read {i}e element");
+            }
         }
         Ok(())
     }
