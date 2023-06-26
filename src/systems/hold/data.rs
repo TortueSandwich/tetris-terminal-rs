@@ -1,6 +1,6 @@
 use crate::{
     erreur::{AlreadyHolding, NothingHolded},
-    utils::{container::*, tetromino::Tetromino},
+    utils::{container::*, tetromino::Tetromino}, param_const::param,
 };
 use std::mem;
 
@@ -10,11 +10,17 @@ pub struct Hold {
 }
 
 impl Hold {
+    pub fn new() -> Self {
+        Hold {
+            holded_polyomino: None,
+            contain: param::CONTAINER_HOLD,
+        }
+    }
     fn get_holded(&self) -> &Option<Tetromino> {
         &self.holded_polyomino
     }
 
-    fn is_holding(&self) -> bool {
+    pub fn is_holding(&self) -> bool {
         self.get_holded().is_some()
     }
     fn is_none(&self) -> bool {
@@ -31,11 +37,11 @@ impl Hold {
         }
     }
 
-    pub fn take_holded(&mut self) -> Result<Option<Tetromino>, NothingHolded> {
+    pub fn take_holded(&mut self) -> Result<Tetromino, NothingHolded> {
         if self.is_none() {
             Err(NothingHolded)
         } else {
-            let res = self.holded_polyomino.take();
+            let res = self.holded_polyomino.take().unwrap();
             Ok(res)
         }
     }

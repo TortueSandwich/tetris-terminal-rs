@@ -156,4 +156,8 @@ impl Tetromino {
     pub fn forme(&self) -> Forme {
         self.f
     }
+
+    pub fn reset_rotation(&mut self) {
+        self.coordonne.current_value = 0;
+    }
 }

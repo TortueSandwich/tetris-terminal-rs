@@ -37,7 +37,7 @@ pub enum Commandes {
     Tourne(Rotation),
     Bouge(Direction),
     Hold,
-    Quick,
+    InstantDrop,
 }
 
 // #[derive(Debug)]
@@ -56,41 +56,38 @@ impl Game {
     pub fn run(&mut self) -> io::Result<()> {
         self.init_playground()?;
 
-        let mut done = false;
+        let mut game_is_done: bool = false;
 
-        let mut prec_mvnt = false;
 
-        while !done {
+        let mut last_move_was_auto = false;
+        let mut last_move_was_instant_drop = false;
+        let mut has_wait_before_placing = false;
+
+        while !game_is_done {
             let interval = self.calculate_interval();
             let mut now = Instant::now();
+
+
             while now.elapsed() < interval {
+                // command handler
                 if let Some(command) = self.get_command(interval - now.elapsed()) {
-                    prec_mvnt = false;
+                    last_move_was_auto = false;
+
                     match command {
-                        Commandes::Tourne(t) => self.tourne_polyo(t),
-                        Commandes::Bouge(t) => self.bouge_polyo(t),
+                        Commandes::Tourne(r) => self.perform_rotation(r),
+                        Commandes::Bouge(d) => self.perform_movement(d),
                         Commandes::Quit => {
-                            done = true;
+                            game_is_done = true;
                             break;
-                        }
-                        Commandes::Hold => {
-                            if let Some(t) = self
-                                .hold_container
-                                .switch_with(Some(self.grid_container.current_polyomino.polyomino))
-                            {
-                                self.grid_container.current_polyomino = PolyominoPosition::from(t);
-                            } else {
-                                self.grid_container.current_polyomino = self.next_tetromino();
-                            }
-                        }
-                        Commandes::Quick => {
-                            self.grid_container.current_polyomino.org.0 +=
-                                self.grid_container.get_distance_preview_polyomino() as i16;
-                            prec_mvnt = true;
+                        },
+                        Commandes::Hold => self.perform_hold(),
+                        Commandes::InstantDrop => {
+                            self.perform_instant_drop();
+                            last_move_was_instant_drop = true;
                         }
                     };
                 } else {
-                    self.bouge_polyo(Direction::D);
+                    self.perform_movement(Direction::D);
                 }
 
                 match self
@@ -98,28 +95,27 @@ impl Game {
                     .current_polyomino
                     .est_bougeable(Direction::D, &self.grid_container.grid)
                 {
-                    None if prec_mvnt => {
+                    None if last_move_was_auto || last_move_was_instant_drop => {
                         let _ = self
                             .grid_container
-                            .grid
-                            .pose_polyomino(&self.grid_container.current_polyomino);
-                        self.grid_container.current_polyomino = self.next_tetromino();
+                            .place_on_grid();
+                        self.next_tetromino();
                         if !est_valide(
                             &self.grid_container.grid,
                             &self.grid_container.current_polyomino,
                         ) {
                             println!("Game Over !!");
-                            done = true;
+                            game_is_done = true;
                             break;
                         }
                     }
                     None => {
-                        prec_mvnt = true;
+                        last_move_was_auto = true;
                         now = Instant::now();
                     }
                     _ => {}
                 };
-
+                last_move_was_instant_drop = false;
                 self.enleve_lignes();
 
                 self.update()?;
@@ -131,24 +127,12 @@ impl Game {
 
 impl Game {
     pub fn new() -> Self {
-        let c_grille = Playground {
-            current_polyomino: PolyominoPosition::rand(),
-            grid: Grid::new(),
-            contain: param::CONTAINER_GRID,
-        };
-
+        let c_grille = Playground::new();
         let c_nexts = Nexts::new();
+        let c_hold = Hold::new();
 
-
-        let c_hold = Hold {
-            holded_polyomino: None,
-            contain: param::CONTAINER_HOLD,
-        };
-
-        //let original_terminal_size: (u16, u16) = size().unwrap();
         let mut init_game = Self {
             stdout: io::stdout(),
-            //original_terminal_size: original_terminal_size,
             nexts_container: c_nexts,
             hold_container: c_hold,
             grid_container: c_grille,
@@ -157,36 +141,23 @@ impl Game {
             //containers: Box::new(vec![&g, &nexts, &holded]),
         };
 
-        // init_game.containers.push(&init_game.g);
-        // init_game.containers.push(&init_game.nexts);
-        // init_game.containers.push(&init_game.holded);
-
-        init_game.grid_container.current_polyomino = init_game.next_tetromino();
+        init_game.next_tetromino();
         init_game
     }
 }
 
-// SPECIALS_GETTERS
 impl Game {
-    // fn get_num_bag(&self) -> usize {
-    //     self.nexts_container.nexts.len() % Forme::COUNT
-    // }
-
-    fn next_tetromino(&mut self) -> PolyominoPosition {
-        match self.nexts_container.take_next(){
-            Err(e) => panic!("{e}"),
-            Ok(t) => PolyominoPosition::from(t),
+    fn perform_rotation(&mut self, r : Rotation) {
+        if let Some(p) = self
+            .grid_container
+            .current_polyomino
+            .est_tournable(r, &self.grid_container.grid)
+        {
+            self.grid_container.current_polyomino = p;
         }
     }
 
-    fn set_next_polyomino(&mut self) {
-        self.grid_container.current_polyomino = PolyominoPosition::from(self.next_tetromino());
-    }
-}
-
-// PROCEDURES
-impl Game {
-    fn bouge_polyo(&mut self, dir: Direction) -> () {
+    fn perform_movement(&mut self, dir: Direction) -> () {
         if let Some(p) = self
             .grid_container
             .current_polyomino
@@ -196,15 +167,40 @@ impl Game {
         }
     }
 
-    fn tourne_polyo(&mut self, r: Rotation) {
-        if let Some(p) = self
-            .grid_container
-            .current_polyomino
-            .est_tournable(r, &self.grid_container.grid)
-        {
-            self.grid_container.current_polyomino = p;
+    fn perform_hold(&mut self) {
+        let curr_p = self.grid_container.get_polyomino();
+        if let Some(holded_p) = self.hold_container.switch_with(Some(curr_p)){
+            self.grid_container.set_polyomino(holded_p);
+        } else {
+            self.next_tetromino();
         }
     }
+
+    fn perform_instant_drop(&mut self) {
+        let preview_polyo_y = self.grid_container.get_distance_preview_polyomino();
+        self.grid_container.current_polyomino.org.0 += preview_polyo_y as i16;
+    }
+}
+
+
+// SPECIALS_GETTERS
+impl Game {
+    // fn get_num_bag(&self) -> usize {
+    //     self.nexts_container.nexts.len() % Forme::COUNT
+    // }
+
+    fn next_tetromino(&mut self) {
+        let t = match self.nexts_container.take_next(){
+            Err(e) => panic!("{e}"),
+            Ok(t) => PolyominoPosition::from(t),
+        };
+        self.grid_container.set_polyomino(t.polyomino);
+    }
+}
+
+// PROCEDURES
+impl Game {
+
 
     fn enleve_lignes(&mut self) {
         if let Some(t) = self.grid_container.grid.clear_lines() {
@@ -243,7 +239,7 @@ impl Game {
             KeyCode::Char('z') => Some(Commandes::Tourne(Rotation::ClockWise)),
             KeyCode::Char('a') => Some(Commandes::Tourne(Rotation::CounterClockWise)),
             KeyCode::Char('d') => Some(Commandes::Hold),
-            KeyCode::Char(' ') => Some(Commandes::Quick),
+            KeyCode::Char(' ') => Some(Commandes::InstantDrop),
 
             _ => None,
         }
