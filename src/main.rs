@@ -16,11 +16,16 @@ mod systems {
         pub mod data;
         pub mod display;
     }
-
+    
     pub mod mechanics {
         pub mod colision;
         pub mod randomness;
         pub mod rotation;
+    }
+    
+    pub mod scoring {
+        pub mod data;
+        pub mod display;
     }
 }
 mod utils {

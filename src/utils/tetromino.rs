@@ -160,4 +160,8 @@ impl Tetromino {
     pub fn reset_rotation(&mut self) {
         self.coordonne.current_value = 0;
     }
+
+    pub fn is_t(&self) -> bool {
+        self.forme() == Forme::T
+    }
 }

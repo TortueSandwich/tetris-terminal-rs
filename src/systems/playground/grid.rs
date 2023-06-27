@@ -123,7 +123,7 @@ impl Grid {
         self[row] = new_row;
     }
 
-    pub fn clear_lines(&mut self) -> Option<u16> {
+    pub fn clear_lines(&mut self) -> u16 {
         // OPtion ???
         let mut num_cleared: usize = 0;
         for row in (0..Self::Y_LEN as usize).rev() {
@@ -136,12 +136,7 @@ impl Grid {
         for row in 0..num_cleared {
             self.reset_line(row);
         }
-
-        if num_cleared == 0 {
-            None
-        } else {
-            Some(num_cleared.try_into().unwrap())
-        }
+        num_cleared.try_into().unwrap()
     }
 }
 

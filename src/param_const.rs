@@ -31,5 +31,7 @@ pub mod param {
     pub const CONTAINER_HOLD: Container = Container::one_tetro_holder(0, 0);
     pub const CONTAINER_GRID: Container = Container::default((8, 20), (0, 22));
     pub const CONTAINER_NEXT: Container =
-        Container::default((24, 24 + 7), (0, cst::NB_PREVIEW as u16 * 4 + 2));
+        Container::default((24, 24 + 6), (0, cst::NB_PREVIEW as u16 * 4 + 2));
+    
+    pub const CONTAINER_SCORE: Container = Container::default((0, 9), (8, 15));
 }

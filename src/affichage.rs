@@ -26,6 +26,7 @@ impl Game {
             &self.grid_container,
             &self.nexts_container,
             &self.hold_container,
+            &self.score_sys,
         ]
     }
     pub fn update(&mut self) -> io::Result<()> {

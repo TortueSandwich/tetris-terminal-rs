@@ -1,3 +1,4 @@
+use core::num;
 use std::io;
 use std::io::Write;
 
@@ -25,7 +26,7 @@ use crate::{
         hold::data::Hold,
         mechanics::{colision::est_valide, randomness::PolyominoBag},
         next::data::Nexts,
-        playground::{data::Playground, grid::Grid, polyomino_position::PolyominoPosition},
+        playground::{data::Playground, grid::Grid, polyomino_position::PolyominoPosition}, scoring::data::ScoringSys,
     },
     utils::{
         direction::{Direction, Rotation},
@@ -47,8 +48,8 @@ pub struct Game {
     pub grid_container: Playground,
     pub nexts_container: Nexts,
     pub hold_container: Hold,
+    pub score_sys: ScoringSys,
     speed: u16,
-    score: u16,
 }
 
 // RUNNING CODE
@@ -59,7 +60,7 @@ impl Game {
         let mut game_is_done: bool = false;
 
 
-        let mut last_move_was_auto = false;
+
         let mut last_move_was_instant_drop = false;
         let mut has_wait_before_placing = false;
 
@@ -71,7 +72,7 @@ impl Game {
             while now.elapsed() < interval {
                 // command handler
                 if let Some(command) = self.get_command(interval - now.elapsed()) {
-                    last_move_was_auto = false;
+                    has_wait_before_placing = false;
 
                     match command {
                         Commandes::Tourne(r) => self.perform_rotation(r),
@@ -82,44 +83,40 @@ impl Game {
                         },
                         Commandes::Hold => self.perform_hold(),
                         Commandes::InstantDrop => {
+                            //self.score_sys.add_score(self.grid_container.get_distance_preview_polyomino() as u128 * 2);
                             self.perform_instant_drop();
                             last_move_was_instant_drop = true;
                         }
                     };
                 } else {
+                    // self.score_sys.add_score(1);
                     self.perform_movement(Direction::D);
                 }
 
-                match self
-                    .grid_container
-                    .current_polyomino
-                    .est_bougeable(Direction::D, &self.grid_container.grid)
-                {
-                    None if last_move_was_auto || last_move_was_instant_drop => {
-                        let _ = self
-                            .grid_container
-                            .place_on_grid();
-                        self.next_tetromino();
-                        if !est_valide(
-                            &self.grid_container.grid,
-                            &self.grid_container.current_polyomino,
-                        ) {
-                            println!("Game Over !!");
+                // Placing
+                let cannot_move_down: bool = self.cannot_go_lower();
+                if cannot_move_down {                    
+                    if has_wait_before_placing || last_move_was_instant_drop {
+
+                        self.score_sys.check_tspin(&self.grid_container.current_polyomino, &self.grid_container.grid);
+                        let _ = self.perform_place();
+                        if self.is_game_over() {
                             game_is_done = true;
+                            self.perform_game_over();
                             break;
                         }
-                    }
-                    None => {
-                        last_move_was_auto = true;
+                    } else {
+                        has_wait_before_placing = true;
                         now = Instant::now();
                     }
-                    _ => {}
                 };
-                last_move_was_instant_drop = false;
-                self.enleve_lignes();
 
+                last_move_was_instant_drop = false;
+                
+                self.perform_clear_and_scoring();
                 self.update()?;
             }
+            
         }
         self.quit_playground()
     }
@@ -136,8 +133,8 @@ impl Game {
             nexts_container: c_nexts,
             hold_container: c_hold,
             grid_container: c_grille,
-            speed: 0,
-            score: 0,
+            speed: 1,
+            score_sys: ScoringSys::new(),
             //containers: Box::new(vec![&g, &nexts, &holded]),
         };
 
@@ -153,6 +150,9 @@ impl Game {
             .current_polyomino
             .est_tournable(r, &self.grid_container.grid)
         {
+            // if p.polyomino.is_t() {
+            //     self.score_sys.check_tspin(&p, &self.grid_container.grid);
+            // }
             self.grid_container.current_polyomino = p;
         }
     }
@@ -180,8 +180,38 @@ impl Game {
         let preview_polyo_y = self.grid_container.get_distance_preview_polyomino();
         self.grid_container.current_polyomino.org.0 += preview_polyo_y as i16;
     }
+
+    fn perform_place(&mut self) -> Result<(), crate::erreur::InvalidCoordinatesError>{
+        self.grid_container.place_on_grid()?;
+        self.next_tetromino();
+        Ok(())
+    }
+    fn perform_game_over(&self) {
+        
+    }
+
+    fn perform_clear_and_scoring(&mut self) {
+        let num_line_cleared: u16 = self.grid_container.grid.clear_lines();
+        if num_line_cleared != 0 {
+            let scr_value: u128 = self.score_sys.move_score(num_line_cleared, self.speed);
+
+            self.score_sys.add_score(scr_value);
+        }
+    }
 }
 
+impl Game {
+    fn cannot_go_lower(&self) -> bool {
+        self.grid_container.current_polyomino.est_bougeable(Direction::D, &self.grid_container.grid).is_none()
+    }
+
+    fn is_game_over(&self) -> bool {
+        !est_valide(
+            &self.grid_container.grid,
+            &self.grid_container.current_polyomino,
+        )
+    }
+}
 
 // SPECIALS_GETTERS
 impl Game {
@@ -202,11 +232,7 @@ impl Game {
 impl Game {
 
 
-    fn enleve_lignes(&mut self) {
-        if let Some(t) = self.grid_container.grid.clear_lines() {
-            self.score += t;
-        }
-    }
+
 
     // fn ajoute_poly_queue(&mut self) {
     //     if self.get_num_bag() <= cst::NB_BAG {

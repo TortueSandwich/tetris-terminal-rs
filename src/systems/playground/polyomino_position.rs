@@ -60,7 +60,7 @@ impl PolyominoPosition {
         Some(moke)
     }
 
-    pub fn est_tournable(&mut self, r: Rotation, g: &Grid) -> Option<PolyominoPosition> {
+    pub fn est_tournable(&self, r: Rotation, g: &Grid) -> Option<PolyominoPosition> {
         self.srs(r, g)
     }
 }
