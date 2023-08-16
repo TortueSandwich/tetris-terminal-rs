@@ -26,7 +26,7 @@ impl PolyominoPosition {
         };
 
         if let Err(e) = moke.polyomino.basic_rotation(r) {
-            panic!("Wtf, erreur ici ? : {e}");
+            panic!("Wtf, erreur ici (.srs()) ? : {e}");
         }
 
         let mut nb_test = 0;
