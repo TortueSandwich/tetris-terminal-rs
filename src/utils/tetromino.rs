@@ -4,15 +4,7 @@ use rand;
 use rotations_const::{AbsCoord, RotationArray};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub enum Forme {
-    I,
-    J,
-    L,
-    O,
-    S,
-    T,
-    Z,
-}
+pub enum Forme { I, J, L, O, S, T, Z, }
 impl Forme {
     pub const COUNT: usize = 7;
 

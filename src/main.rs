@@ -35,6 +35,8 @@ mod utils {
     pub mod show_srs;
     pub mod tetromino;
     pub mod writer;
+    pub mod piece;
+    pub mod quatromino;
 }
 mod affichage;
 mod erreur;
